@@ -1,0 +1,3 @@
+print("Hello from BeanShell!");
+   String name = "Sathish";
+   print("Welcome, " + name);
