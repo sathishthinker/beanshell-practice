@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule created="1758197910607" id="a9feeb75995b134981995cc30c4f01be" language="beanshell" modified="1781195363403" name="Test1">
+  <Source>
+  import sailpoint.api.SailPointContext;
+  import sailpoint.object.Identity;
+  import sailpoint.tools.GeneralException;
+
+
+  Identity id = context.getObjectByName(Identity.class, "James.Smith");
+  System.out.println(id.getFirstname());
+  System.out.println(id.getLastname());
+  System.out.println(id.getEmail());
+  System.out.println(id.getCreated());
+  System.out.println(id.getModified());
+
+
+
+
+
+  </Source>
+</Rule>
