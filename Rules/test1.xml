@@ -17,6 +17,6 @@
 
   String password = (id != null) ? id.getPassword() : null;
   System.out.println("Password: " + password);
-
+System.out.println(id.getName());
   </Source>
 </Rule>
