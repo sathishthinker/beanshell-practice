@@ -15,9 +15,8 @@
   System.out.println(id.getModified());
   System.out.println(id.getName());
 
-
-
-
+  String password = (id != null) ? id.getPassword() : null;
+  System.out.println("Password: " + password);
 
   </Source>
 </Rule>
