@@ -21,7 +21,7 @@
   boolean deleteEnabled = false;
 
   // Maximum requests per execution
-  int batchSize = 10;
+  int batchSize = 20;
 
   // Store request details
   Map attributeSyncResults = new LinkedHashMap();
