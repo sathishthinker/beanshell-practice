@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule created="1793278186092" id="c0a84601a1861a9081a187b5926c0340" language="beanshell" modified="1795174930036" name="AttributeSyncCleanupDryRun">
+  <Source>
+  import java.util.ArrayList;
+  import java.util.Iterator;
+  import java.util.LinkedHashMap;
+  import java.util.List;
+  import java.util.Map;
+
+  import sailpoint.api.Terminator;
+  import sailpoint.api.SailPointContext;
+  import sailpoint.object.Filter;
+  import sailpoint.object.IdentityRequest;
+  import sailpoint.object.QueryOptions;
+  import sailpoint.tools.Util;
+
+
+
+  // SAFETY CONFIGURATION
+  boolean deleteEnabled = false;
+
+  // Maximum requests per execution
+  int batchSize = 100;
+
+  // Store request details
+  Map attributeSyncResults = new LinkedHashMap();
+
+  // Store IDs for deletion
+  List requestIds = new ArrayList();
+
+  QueryOptions qo = new QueryOptions();
+
+  // Identify AttributeSync requests
+  Filter attributeSync = Filter.or(Filter.eq("type", "AttributeSync"), Filter.eq("source", "AttributeSync"));
+
+  qo.addFilter(attributeSync);
+
+  // Oldest requests first
+  qo.addOrdering("created", true);
+
+  // Limit records per execution
+  qo.setResultLimit(batchSize);
+
+  Iterator iterator = null;
+  long scanned = 0;
+  long deleted = 0;
+
+  try {
+
+    iterator = context.search(IdentityRequest.class, qo);
+
+    while (iterator.hasNext()) {
+
+      IdentityRequest request = (IdentityRequest) iterator.next();
+
+      String requestId = request.getId();
+
+      Map requestDetails = new LinkedHashMap();
+
+      requestDetails.put("Request Name", request.getName());
+
+      requestDetails.put("Request ID", requestId);
+
+      requestDetails.put("Created Date", request.getCreated());
+
+      requestDetails.put("Status", request.getExecutionStatus());
+
+      attributeSyncResults.put(requestId, requestDetails);
+
+      requestIds.add(requestId);
+
+      scanned++;
+    }
+
+  } finally {
+
+    if (iterator != null) {
+      Util.flushIterator(iterator);
+    }
+  }
+
+  // Initialize Terminator
+  Terminator terminator = new Terminator(context);
+
+  // Delete only when explicitly enabled
+  if (deleteEnabled) {
+
+    for (int i = 0; i &lt; requestIds.size(); i++) {
+
+      String requestId = (String) requestIds.get(i);
+
+      IdentityRequest request = context.getObjectById(IdentityRequest.class, requestId);
+
+      if (request == null) {
+        continue;
+      }
+
+      // Revalidate request scope
+      boolean isAttributeSync = "AttributeSync".equals(request.getType())
+        || "AttributeSync".equals(request.getSource());
+
+      if (!isAttributeSync) {
+        continue;
+      }
+
+      log.warn("Deleting AttributeSync request: " + request.getName() + ", ID=" + requestId
+               + ", Created Date=" + request.getCreated());
+
+      terminator.deleteObject(request);
+
+      deleted++;
+
+      if (deleted % 25 == 0) {
+        context.commitTransaction();
+        context.decache();
+      }
+    }
+
+    context.commitTransaction();
+    context.decache();
+  }
+
+  // Prepare final results
+  Map finalResults = new LinkedHashMap();
+
+  finalResults.put("Mode", deleteEnabled ? "DELETE" : "DRY RUN");
+
+  finalResults.put("Batch Size", batchSize);
+
+  finalResults.put("Total Scanned", scanned);
+
+  finalResults.put("Total Deleted", deleted);
+
+  finalResults.put("AttributeSync Requests", attributeSyncResults);
+
+  return finalResults;
+
+
+
+  </Source>
+</Rule>
